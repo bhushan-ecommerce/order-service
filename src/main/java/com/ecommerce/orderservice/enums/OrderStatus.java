@@ -7,4 +7,3 @@ public enum OrderStatus {
     CONFIRMED,
     FAILED
 }
-
