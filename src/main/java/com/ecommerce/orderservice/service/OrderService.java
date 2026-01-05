@@ -1,6 +1,6 @@
 package com.ecommerce.orderservice.service;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
 
 import com.ecommerce.orderservice.dto.CreateOrderRequestDTO;
 import com.ecommerce.orderservice.dto.OrderDetailResponseDto;
@@ -15,7 +15,9 @@ public interface OrderService {
 	
 //	OrderResponseDTO getOrderByUserId(Long userId);
 	
-	List<OrderDetailResponseDto> getOrderDetailsByUserId(Long userId);
+//	List<OrderDetailResponseDto> getOrderDetailsByUserId(Long userId);
+	
+	Page<OrderDetailResponseDto> getOrderDetailsByUserId(Long userId, int page, int size);
 
 	OrderDetailResponseDto getOrderDetailsByOrderId(Long orderId);
 
