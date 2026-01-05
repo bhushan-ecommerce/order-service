@@ -2,6 +2,10 @@ package com.ecommerce.orderservice.service.impl;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.ecommerce.orderservice.clients.InventoryClient;
@@ -17,7 +21,6 @@ import com.ecommerce.orderservice.entity.Order;
 import com.ecommerce.orderservice.entity.OrderItem;
 import com.ecommerce.orderservice.enums.OrderStatus;
 import com.ecommerce.orderservice.exception.OrderNotFoundException;
-import com.ecommerce.orderservice.mapper.OrderMapper;
 import com.ecommerce.orderservice.repository.OrderRepository;
 import com.ecommerce.orderservice.service.OrderService;
 
@@ -114,6 +117,49 @@ public class OrderServiceImpl implements OrderService {
 //		return new OrderResponseDTO(order.getId(), order.getStatus().name(), order.getTotalAmount());
 //	}
 
+
+//	@Override
+//	public List<OrderDetailResponseDto> getOrderDetailsByUserId(Long userId) {
+//		// TODO Auto-generated method stub
+//
+//		List<Order> byUserId = orderRepository.findByUserId(userId);
+//
+//		return byUserId.stream().map(this::mapToOrderDetailDto).toList();
+//	}
+
+	@Override
+	public OrderDetailResponseDto getOrderDetailsByOrderId(Long orderId) {
+		// TODO Auto-generated method stub
+		Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
+
+		return mapToOrderDetailDto(order);
+
+	}
+
+	@Override
+	public Page<OrderDetailResponseDto> getOrderDetailsByUserId(Long userId, int page, int size) {
+		// TODO Auto-generated method stub
+
+		Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+		Page<Order> orderPage = orderRepository.findByUserId(userId, pageable);
+
+		return orderPage.map(this::mapToOrderDetailDto);
+
+	}
+
+	private OrderDetailResponseDto mapToOrderDetailDto(Order order) {
+
+		List<OrderItemResponseDTO> items = order.getItems().stream()
+				.map(item -> new OrderItemResponseDTO(item.getProductId(), item.getQuantity(), item.getPrice()))
+				.toList();
+
+		return new OrderDetailResponseDto(order.getId(), order.getUserId(), order.getStatus().name(),
+				order.getTotalAmount(), order.getCreatedAt(), items);
+	}
+	
+	
+
 	private Order setOrders(Long userId, OrderStatus status, Double amount) {
 
 		Order order = new Order();
@@ -133,48 +179,6 @@ public class OrderServiceImpl implements OrderService {
 		orderItem.setOrder(order);
 
 		return orderItem;
-	}
-
-	@Override
-	public List<OrderDetailResponseDto> getOrderDetailsByUserId(Long userId) {
-		// TODO Auto-generated method stub
-			
-		List<Order> byUserId = orderRepository.findByUserId(userId);
-		
-		return byUserId.stream().map(this:: mapToOrderDetailDto).toList();
-	}
-
-	@Override
-	public OrderDetailResponseDto getOrderDetailsByOrderId(Long orderId) {
-		// TODO Auto-generated method stub
-		Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
-		
-		return mapToOrderDetailDto(order);
-		
-		
-	}
-	
-	
-	
-	private OrderDetailResponseDto mapToOrderDetailDto(Order order) {
-
-	    List<OrderItemResponseDTO> items = order.getItems()
-	            .stream()
-	            .map(item -> new OrderItemResponseDTO(
-	                    item.getProductId(),
-	                    item.getQuantity(),
-	                    item.getPrice()
-	            ))
-	            .toList();
-
-	    return new OrderDetailResponseDto(
-	            order.getId(),
-	            order.getUserId(),
-	            order.getStatus().name(),
-	            order.getTotalAmount(),
-	            order.getCreatedAt(),
-	            items
-	    );
 	}
 
 }
