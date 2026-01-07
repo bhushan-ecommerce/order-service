@@ -9,6 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.ecommerce.orderservice.clients.InventoryClient;
+import com.ecommerce.orderservice.clients.InventoryServiceClient;
 import com.ecommerce.orderservice.clients.ProductClient;
 import com.ecommerce.orderservice.dto.CreateOrderRequestDTO;
 import com.ecommerce.orderservice.dto.InventoryResponseDTO;
@@ -24,6 +25,8 @@ import com.ecommerce.orderservice.exception.OrderNotFoundException;
 import com.ecommerce.orderservice.repository.OrderRepository;
 import com.ecommerce.orderservice.service.OrderService;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -31,16 +34,17 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderServiceImpl implements OrderService {
 
 	private final OrderRepository orderRepository;
-	private final InventoryClient inventoryClient;
 	private final ProductClient productClient;
+	private final InventoryServiceClient inventoryServiceClient;
 
-	OrderServiceImpl(OrderRepository orderRepository, InventoryClient inventoryClient, ProductClient productClient) {
+	OrderServiceImpl(OrderRepository orderRepository, ProductClient productClient, InventoryServiceClient inventoryServiceClient) {
 
 		this.orderRepository = orderRepository;
-		this.inventoryClient = inventoryClient;
 		this.productClient = productClient;
+		this.inventoryServiceClient = inventoryServiceClient;
 	}
 
+	
 	@Override
 	public OrderResponseDTO createOrder(CreateOrderRequestDTO dto) {
 		// TODO Auto-generated method stub
@@ -62,7 +66,7 @@ public class OrderServiceImpl implements OrderService {
 
 		try {
 			// reserved inventory stock
-			InventoryResponseDTO reserveStock = inventoryClient
+			InventoryResponseDTO reserveStock = inventoryServiceClient
 					.reserveStock(new StockRequestDTO(dto.productId(), dto.quantity()));
 			log.info("Stock reserved for productId={}", dto.productId(), reserveStock);
 			savedOrder.setStatus(OrderStatus.STOCK_RESERVED);
@@ -72,14 +76,14 @@ public class OrderServiceImpl implements OrderService {
 
 			if (paymentSuccess) {
 
-				InventoryResponseDTO confirmStock = inventoryClient
+				InventoryResponseDTO confirmStock = inventoryServiceClient
 						.confirmStock(new StockRequestDTO(dto.productId(), dto.quantity()));
 				log.info("Stock confirm for productId={}", dto.productId(), confirmStock);
 				savedOrder.setStatus(OrderStatus.CONFIRMED);
 
 			} else {
 
-				InventoryResponseDTO releaseStock = inventoryClient
+				InventoryResponseDTO releaseStock = inventoryServiceClient
 						.releaseStock(new StockRequestDTO(dto.productId(), dto.quantity()));
 				log.warn("Order FAILED id={}", releaseStock);
 				savedOrder.setStatus(OrderStatus.FAILED);
@@ -90,7 +94,7 @@ public class OrderServiceImpl implements OrderService {
 			// TODO: handle exception
 			log.error("Order failed, rolling back inventory", e);
 
-			inventoryClient.releaseStock(new StockRequestDTO(dto.productId(), dto.quantity()));
+			inventoryServiceClient.releaseStock(new StockRequestDTO(dto.productId(), dto.quantity()));
 
 			savedOrder.setStatus(OrderStatus.FAILED);
 		}

@@ -4,10 +4,13 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import com.ecommerce.orderservice.clients.fallback.InventoryClientFallback;
 import com.ecommerce.orderservice.dto.InventoryResponseDTO;
 import com.ecommerce.orderservice.dto.StockRequestDTO;
+import com.netflix.appinfo.RefreshableAmazonInfoProvider.FallbackAddressProvider;
 
-@FeignClient(name= "inventory-service")
+@FeignClient(name= "inventory-service",
+fallback = InventoryClientFallback.class)
 public interface InventoryClient {
 
 	

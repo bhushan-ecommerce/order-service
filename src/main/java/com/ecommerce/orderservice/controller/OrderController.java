@@ -16,6 +16,9 @@ import com.ecommerce.orderservice.dto.OrderDetailResponseDto;
 import com.ecommerce.orderservice.dto.OrderResponseDTO;
 import com.ecommerce.orderservice.service.OrderService;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+
 @RestController
 @RequestMapping("/api/order")
 public class OrderController {
